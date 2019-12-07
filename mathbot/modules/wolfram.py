@@ -63,7 +63,6 @@ server: https://discord.gg/JbJbRZS
 
 FOOTER_LINK = """\
 Data sourced from Wolfram|Alpha: <http://www.wolframalpha.com/input/?{query}>
-Do more with Wolfram|Alpha Pro: <http://www.wolframalpha.com/pro/>
 """
 
 IGNORE_MESSAGE_SERVER = """\
@@ -370,10 +369,7 @@ class WolframModule(Cog):
 
 	@staticmethod
 	async def format_adm(ctx, assuptions, small):
-		embed = discord.Embed(
-			title='Do more with Wolfram|Alpha pro',
-			url='http://www.wolframalpha.com/pro/'
-		)
+		embed = discord.Embed()
 		if not is_private(ctx.channel) and await ctx.bot.settings.resolve('f-wolf-mention', ctx.channel, ctx.channel.guild):
 			embed.add_field(name='Query made by', value=ctx.author.mention)
 		if not small and assuptions and assuptions.count > 0 and len(str(assuptions)) <= 800:
