@@ -1,9 +1,15 @@
-FROM python:3.6.9-slim-buster
+FROM python:3.7.5-slim-buster AS build
 
+ADD ./requirements.txt /app/requirements.txt
+WORKDIR /app
+
+RUN apt update && apt install git build-essential -y && pip install -r /app/requirements.txt
+
+FROM python:3.7.5-slim-buster AS run
+
+COPY --from=build /usr/local/lib/python3.7/site-packages /usr/local/lib/python3.7/site-packages
 ADD . /app
 
 WORKDIR /app/mathbot
 
-RUN apt update && apt install build-essential git -y && pip install pipenv && pipenv install
-
-CMD ["pipenv", "run", "python", "/app/mathbot/entrypoint.py", "parameters.json"]
+CMD ["python", "/app/mathbot/entrypoint.py", "parameters.json"]
