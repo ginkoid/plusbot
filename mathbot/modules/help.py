@@ -6,10 +6,7 @@ from discord.ext.commands import command, Cog
 import discord
 from utils import is_private
 
-
-SERVER_LINK = 'https://discord.gg/JbJbRZS'
 PREFIX_MEMORY_EXPIRE = 60 * 60 * 24 * 3 # 3 days
-
 
 def doubleformat(string, **replacements):
 	''' Acts a but like format, but works on things wrapped in *two* curly braces. '''
@@ -20,14 +17,6 @@ def doubleformat(string, **replacements):
 
 class HelpModule(Cog):
 	''' Module that serves help pages. '''
-
-	@command()
-	async def support(self, context):
-		await context.send(f'Mathbot support server: {SERVER_LINK}')
-
-	@command()
-	async def invite(self, context):
-		await context.send('Add mathbot to your server: https://dxsmiley.github.io/mathbot/add.html')
 
 	@command()
 	async def help(self, context, *, topic='help'):
@@ -57,15 +46,13 @@ class HelpModule(Cog):
 					page,
 					prefix=prefix,
 					mention=context.bot.user.mention,
-					add_link='https://dxsmiley.github.io/mathbot/add.html',
-					server_link=SERVER_LINK,
 					patreon_listing=await context.bot.get_patron_listing()
 				)
 				await context.message.author.send(page)
 		except discord.Forbidden:
 			await context.send(embed=discord.Embed(
 				title='The bot was unable to slide into your DMs',
-				description=f'Please try modifying your privacy settings to allow DMs from server members. If you are still experiencing problems, contact the developer at the mathbot server: {SERVER_LINK}',
+				description=f'Please try modifying your privacy settings to allow DMs from server members.',
 				colour=discord.Colour.red()
 			))
 

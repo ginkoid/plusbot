@@ -49,20 +49,14 @@ Maybe your query was malformed?
 
 ERROR_MESSAGE_TIMEOUT = """Wolfram|Alpha query timed out.
 Maybe you should try again?
-
-If this error keeps recurring, you should report it to DXsmiley on the \
-official MathBot server: https://discord.gg/JbJbRZS
 """
 
 ERROR_MESSAGE_ACCOUNT_BLOCKED = """MathBot has exceeded the total number of \
 Wolfram|Alpha queries it is allowed to make in one month.
-
-You should report this error to DXsmiley on the official MathBot \
-server: https://discord.gg/JbJbRZS
 """
 
 FOOTER_LINK = """\
-Data sourced from Wolfram|Alpha: <http://www.wolframalpha.com/input/?{query}>
+Data sourced from Wolfram|Alpha: <https://www.wolframalpha.com/input/?{query}>
 """
 
 IGNORE_MESSAGE_SERVER = """\
@@ -79,7 +73,6 @@ FILTER_FAILURE = '''\
 **That query contains one or more banned words and will not be run.**
 The owner of this server has the power to turn this off.
 Alternatively, you can make the query by messaging this bot directly.
-Questions and requests should be directed to <@133804143721578505> on the official MathBot server: https://discord.gg/JbJbRZS
 '''
 
 FILTER_FAILURE_INTERPRETATION = '''\
@@ -300,7 +293,7 @@ class WolframModule(Cog):
 			print('W|A timeout:', query)
 			await ctx.send(ERROR_MESSAGE_TIMEOUT.format(query))
 		except aiohttp.ClientError as error:
-			print('Wolf: HTTP processing error:', error.message)
+			print('Wolf: HTTP processing error:', error)
 			await ctx.send('The server threw an error. Try again in a moment.')
 		except xml.parsers.expat.ExpatError as error:
 			print('Wolf: XML processing error:', error)

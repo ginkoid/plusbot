@@ -17,9 +17,3 @@ Even with history enabled, the bot will clear it's memory *for a particuar chann
 Commands that result in an error are not stored in the history.
 
 Commands that result in an error during re-run are removed from the history.
-
-## Patronage
-
-Become a Patron and support the bot: https://www.patreon.com/dxsmiley
-
-You must subscribe to the quadratic tier or higher to get access to the calculator history.

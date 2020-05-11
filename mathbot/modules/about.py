@@ -28,15 +28,6 @@ core.help.load_from_file('./help/about.md')
 core.help.load_from_file('./help/management.md')
 core.help.load_from_file('./help/commands.md')
 
-
-async def get_bot_total_servers(id):
-	async with aiohttp.ClientSession() as session:
-		url = 'https://discordbots.org/api/bots/{}/stats'.format(id)
-		async with session.get(url) as response:
-			jdata = await response.json()
-			return jdata.get('server_count')
-
-
 class AboutModule(Cog):
 
 	# Send a message detailing the shard number, server count,
@@ -44,12 +35,6 @@ class AboutModule(Cog):
 	@command()
 	async def stats(self, context):
 		embed = discord.Embed(title='MathBot Stats', colour=BOT_COLOUR)
-		embed.add_field(
-			name='Total Servers',
-			# MathBot's ID, hard coded for proper testing.
-			value=await get_bot_total_servers('134073775925886976'),
-			inline=True
-		)
 		embed.add_field(
 			name='Visible Servers',
 			value=len(context.bot.guilds),

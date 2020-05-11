@@ -14,7 +14,6 @@ import traceback
 import re
 import imageutil
 import core.help
-import advertising
 import discord
 import json
 from queuedict import QueueDict
@@ -26,7 +25,7 @@ from contextlib import suppress
 core.help.load_from_file('./help/latex.md')
 
 
-LATEX_SERVER_URL = 'http://rtex.probablyaweb.site/api/v2'
+LATEX_SERVER_URL = 'https://rtex.probablyaweb.site/api/v2'
 DELETE_EMOJI = '🗑'
 
 
@@ -139,7 +138,6 @@ class LatexModule(Cog):
 						sent_message = await guard.send('Rendering failed. Check your code. You can edit your existing message if needed.')
 				else:
 					sent_message = await guard.send(file=discord.File(render_result, 'latex.png'))
-					await self.bot.advertise_to(message.author, message.channel, guard)
 					if await self.bot.settings.resolve_message('f-tex-delete', message):
 						try:
 							await message.delete()

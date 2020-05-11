@@ -27,7 +27,6 @@ import utils
 from queuedict import QueueDict
 from modules.reporter import report, report_via_webhook_only
 
-from advertising import AdvertisingMixin
 from patrons import PatronageMixin
 
 
@@ -44,11 +43,10 @@ The bot does not have all the permissions it requires in order to run in this ch
  - Read message history
 
 Contact your server administrators to rectify this problem.
-You can seek additional support on the official mathbot server: https://discord.gg/JbJbRZS
 '''
 
 
-class MathBot(AdvertisingMixin, PatronageMixin, discord.ext.commands.AutoShardedBot):
+class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 
 	def __init__(self, parameters):
 		super().__init__(
@@ -82,50 +80,12 @@ class MathBot(AdvertisingMixin, PatronageMixin, discord.ext.commands.AutoSharded
 		self._connection.emoji = []
 		gc.collect()
 		objgraph.show_most_common_types()
-		# await self.leave_inactive_servers()
 
 	async def on_disconnect(self):
 		print('on_disconnect')
 
 	async def on_resumed(self):
 		print('on_resumed')
-
-	async def leave_inactive_servers(self):
-		''' There's definitely something wrong with this
-			Or at least, at one point it was suprting "leaving guild None",
-			so it's definitely not fault tolerent enough
-		'''
-		threshhold = time.time() - (60 * 60 * 24 * 30 * 7) # Approx. 7 months
-		for guild in self.guilds:
-			try:
-				should_leave = True
-				for channel in guild.text_channels:
-					try:
-						async for message in channel.history(limit=4):
-							if message.created_at.timestamp() > threshhold:
-								should_leave = False
-								break
-					except (discord.errors.NotFound, discord.errors.Forbidden):
-						pass
-					if not should_leave:
-						break
-				if should_leave:
-					print(f'Leaving guild {guild.name}')
-					await guild.leave()
-					await report(self, f'Leaving guild: {guild.name}')
-				# else:
-				# 	print(f'Staying in {guild.name}')
-			except discord.errors.HTTPException:
-				print(f'HTTPException while getting activity for guild: {guild.name}')
-
-	def should_respond_to_message(self, message):
-		if self.release == 'production' and message.author.bot:
-			return False
-		if message.author.id in self.blocked_users:
-			return False
-		if utils.is_private(message.channel):
-			return True
-		return self._can_post_in_guild(message)
 
 	async def on_message(self, message):
 		if self.should_respond_to_message(message):
@@ -255,7 +215,7 @@ class MathBot(AdvertisingMixin, PatronageMixin, discord.ext.commands.AutoSharded
 				embed = discord.Embed(
 					title='An internal error occurred.',
 					colour=discord.Colour.red(),
-					description='If this keeps happening, you should contact the developers on the official mathbot server: https://discord.gg/JbJbRZS'
+					description='A report has been automatically sent to the developer.'
 				)
 				await destination.send(embed=embed)
 		finally:
@@ -285,14 +245,11 @@ def _get_extensions(parameters):
 	yield 'modules.reporter'
 	yield 'modules.settings'
 	yield 'modules.wolfram'
-	yield 'modules.reboot'
 	yield 'modules.oeis'
 	if parameters.get('release') == 'development':
 		yield 'modules.echo'
 		yield 'modules.throws'
 	yield 'patrons' # This is a little weird.
-	if parameters.get('release') == 'release':
-		yield 'modules.analytics'
 
 
 def _create_keystore(parameters):

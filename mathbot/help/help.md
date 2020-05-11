@@ -24,5 +24,3 @@ More help is also available:
 	`{{prefix}}about` - General information about the bot.
 
 All commands can be invoked by mentioning the bot. For example, the command `@MathBot prefix` will always tell you the bot's prefix on the current server even if you don't know what it is.
-
-Support the bot on Patreon: https://www.patreon.com/dxsmiley

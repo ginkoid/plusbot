@@ -17,10 +17,10 @@ class PatronageMixin:
 	async def patron_tier(self, uid):
 		if not isinstance(uid, (str, int)):
 			raise TypeError('User ID looks invalid')
-		return await self.keystore.get('patron', str(uid)) or 0
+		return TIER_SPECIAL
 
 	async def get_patron_listing(self):
-		return (await self.keystore.get('patron', 'listing')) or 'nobody?'
+		return 'nobody?'
 
 
 class PatronModule(Cog):
@@ -31,31 +31,11 @@ class PatronModule(Cog):
 	@command()
 	async def check_patronage(self, ctx):
 		m = []
-		tier = await ctx.bot.patron_tier(ctx.author.id)
+		tier = TIER_SPECIAL
 		m.append(f'Your patronage tier is {get_tier_name(tier)}')
 		if isinstance(ctx.channel, discord.TextChannel):
-			tier = await ctx.bot.patron_tier(ctx.channel.guild.owner_id)
 			m.append(f'The patrongage of this server\'s owner is {get_tier_name(tier)}')
 		await ctx.send('\n'.join(m))
-
-	@Cog.listener()
-	async def on_ready(self):
-		guild = self.bot.get_guild(233826358369845251)
-		listing = []
-		if guild is None:
-			print('Could not get mathbot guild in order to find patrons')
-		else:
-			for member in guild.members:
-				tier = max(role_id_to_tier(r.id) for r in member.roles)
-				if tier != 0:
-					print(member, 'is tier', get_tier_name(tier))
-					if tier != TIER_SPECIAL:
-						# replacement to avoid anyone putting in a link or something
-						listing.append((member.nick or member.name).replace('.', '\N{zero width non-joiner}'))
-					await self.bot.keystore.set('patron', str(member.id), tier, expire = 60 * 60 * 24 * 3)
-			if listing:
-				await self.bot.keystore.set('patron', 'listing', '\n'.join(f' - {i}' for i in sorted(listing)))
-
 
 def get_tier_name(tier):
 	try:
@@ -68,17 +48,6 @@ def get_tier_name(tier):
 		}[tier]
 	except KeyError:
 		raise InvalidPatronRankError
-
-
-def role_id_to_tier(name):
-	return {
-		491182624258129940: TIER_CONSTANT,
-		491182701806878720: TIER_QUADRATIC,
-		491182737026449410: TIER_EXPONENTIAL,
-		294413896893071365: TIER_SPECIAL,
-		233826884113268736: TIER_SPECIAL
-	}.get(name, TIER_NONE)
-
 
 def setup(bot):
 	return bot.add_cog(PatronModule(bot))

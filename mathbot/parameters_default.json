@@ -14,23 +14,10 @@
 	"wolfram": {
 		"key": null
 	},
-	"patrons": {
-
-	},
 	"automata": {
 		"token": null,
 		"target": null,
 		"channel": null
-	},
-	"analytics": {
-		"carbon": null,
-		"discord-bots": null,
-		"bots-org": null
-	},
-	"advertising": {
-		"enable": true,
-		"interval": 200,
-		"starting-amount": 50
 	},
 	"error-reporting": {
 		"channel": null

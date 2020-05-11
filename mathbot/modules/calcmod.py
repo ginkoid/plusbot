@@ -12,7 +12,6 @@ import calculator.blackbox
 import collections
 import traceback
 import patrons
-import advertising
 import aiohttp
 import async_timeout
 import json
@@ -45,8 +44,8 @@ Command history is not avaiable on this server.
 '''
 
 HISTORY_DISABLED_PRIVATE = '''\
-Private command history is only avaiable to quadratic Patreon supporters: https://www.patreon.com/dxsmiley
-A support teir of **quadratic** or higher is required.
+Private command history is only avaiable to quadratic Patreon supporters.
+A support tier of **quadratic** or higher is required.
 '''
 
 
@@ -139,13 +138,7 @@ class CalculatorModule(Cog):
 	async def handle_libs_add(self, ctx, *, url):
 		print('Adding a library')
 		''' Command to add a new library to the server '''
-		# if not await self.allow_calc_history(ctx.channel):
-		# 	return discord.Embed(
-		# 		title='This feature is Patron-only',
-		# 		description='This feature is currently only avaiable to bot patrons. Go to bit.ly/mathbot to become a patron.',
-		# 		colour=discord.Colour.red()
 
-		# 	)
 		# Filter out non-libraries
 		if not url.startswith('https://gist.github.com/'):
 			return discord.Embed(
@@ -176,7 +169,7 @@ class CalculatorModule(Cog):
 		if len(libs) >= 10:
 			return discord.Embed(
 				title='Library add error',
-				description='Servers cannot have more than ten libraries installed at once. If you want to complain about this poke @DXsmiley over here: https://discord.gg/JbJbRZS',
+				description='Servers cannot have more than ten libraries installed at once.',
 				colour=discord.Colour.red()
 			)
 		# Add the new library to the list and store it again
@@ -277,7 +270,6 @@ class CalculatorModule(Cog):
 						result = 'Result was too large to display.'
 					await send(result)
 				if worked:
-					await self.bot.advertise_to(message.author, message.channel, message.channel)
 					if expression_has_side_effect(arg):
 						await self.add_command_to_history(message.channel, arg)
 				safe.sprint('Finished calculation:', arg)

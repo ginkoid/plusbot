@@ -16,7 +16,7 @@ import gc
 logging.basicConfig(level = logging.INFO)
 
 
-class MyBot(discord.ext.commands.AutoShardedBot):
+class LeaveBot(discord.ext.commands.AutoShardedBot):
 
 	def __init__(self, parameters):
 		super().__init__(
@@ -60,4 +60,4 @@ if __name__ == '__main__':
                 with open(i) as f:
                     yield json.load(f)
 
-    MyBot(retrieve_parameters()).run()
+    LeaveBot(retrieve_parameters()).run()
