@@ -82,11 +82,7 @@ ENABLE_HISTORY = True
 # Servers on which history is enabled, even if the server
 # owners are not patrons.
 # Will still be disabled if ENABLE_HISTORY is False.
-HISTORY_ENABLED_SERVERS = \
-	[ 233826358369845251 # Mathbot server
-	, 265453844312358912 # Lys's server
-	]
-
+HISTORY_ENABLED_SERVERS = []
 
 class CalculatorModule(Cog):
 

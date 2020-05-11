@@ -22,7 +22,6 @@ class PatronageMixin:
 	async def get_patron_listing(self):
 		return 'nobody?'
 
-
 class PatronModule(Cog):
 
 	def __init__(self, bot):

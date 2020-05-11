@@ -68,14 +68,6 @@ class AboutModule(Cog):
 		cmd = context.bot.get_command('help')
 		await context.invoke(cmd, topic='about')
 
-	@command(name=codecs.encode('shefhvg', 'rot_13'))
-	@command_allowed('x-bonus')
-	async def ignore_pls(self, context):
-		with open('not_an_image', 'rb') as f:
-			await context.send(file=discord.File(f, 'youaskedforit.png'))
-		await report(context.bot, ':fox:')
-
-
 def get_uptime():
 	''' Returns a string representing how long the bot has been running for '''
 	cur_time = datetime.datetime.now()
