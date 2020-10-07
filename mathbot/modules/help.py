@@ -36,9 +36,8 @@ class HelpModule(Cog):
 		# Display the default prefix if the user is in DMs and uses no prefix.
 		prefix = context.prefix or '='
 
-		print(prefix, context.bot.user.id)
 		if prefix.strip() in [f'<@{context.bot.user.id}>', f'<@!{context.bot.user.id}>']:
-			prefix = '@MathBot '
+			prefix = '@plusbot '
 		
 		try:
 			for index, page in enumerate(found_doc):
@@ -46,7 +45,7 @@ class HelpModule(Cog):
 					page,
 					prefix=prefix,
 					mention=context.bot.user.mention,
-					patreon_listing=await context.bot.get_patron_listing()
+					username=context.bot.user.name
 				)
 				await context.message.author.send(page)
 		except discord.Forbidden:

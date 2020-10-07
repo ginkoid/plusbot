@@ -55,7 +55,7 @@ class Redis(Driver):
 		self.startup_lock = asyncio.Lock()
 
 	async def ensure_started(self):
-		with await self.startup_lock:
+		async with self.startup_lock:
 			if not self.started:
 				user, password, host, port = re.split(r':|@', self.url[8:])
 				if password == '':

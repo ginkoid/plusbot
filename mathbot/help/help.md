@@ -2,10 +2,6 @@
 
 Hello! I'm a bot that provides some maths-related features.
 
-Add MathBot to your server using this link: <{{add_link}}>
-
-MathBot is developed by DXsmiley. You can talk to him via the official MathBot server: <{{server_link}}>
-
 The following user commands are available:
 
 	`{{prefix}}tex` - Renders *LaTeX* equations. See `{{prefix}}help latex` for details.
@@ -23,4 +19,4 @@ More help is also available:
 	`{{prefix}}help settings` - Get information about settings.
 	`{{prefix}}about` - General information about the bot.
 
-All commands can be invoked by mentioning the bot. For example, the command `@MathBot prefix` will always tell you the bot's prefix on the current server even if you don't know what it is.
+All commands can be invoked by mentioning the bot. For example, the command `@{{username}} prefix` will always tell you the bot's prefix on the current server even if you don't know what it is.

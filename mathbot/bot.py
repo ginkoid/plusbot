@@ -55,7 +55,21 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 			shard_count=parameters.get('shards total'),
 			shard_ids=parameters.get('shards mine'),
 			max_messages=2000,
-			fetch_offline_members=False
+			chunk_guilds_at_startup=False,
+			intents=discord.Intents(
+				guilds=True,
+				members=False,
+				bans=False,
+				emojis=False,
+				integrations=False,
+				webhooks=False,
+				invites=False,
+				voice_states=False,
+				presences=False,
+				messages=True,
+				reactions=True,
+				typing=False,
+			)
 		)
 		self.parameters = parameters
 		self.release = parameters.get('release')
@@ -86,6 +100,15 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 
 	async def on_resumed(self):
 		print('on_resumed')
+
+	def should_respond_to_message(self, message):
+		if self.release == 'production' and message.author.bot:
+			return False
+		if message.author.id in self.blocked_users:
+			return False
+		if utils.is_private(message.channel):
+			return True
+		return self._can_post_in_guild(message)
 
 	async def on_message(self, message):
 		if self.should_respond_to_message(message):
