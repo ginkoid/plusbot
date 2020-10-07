@@ -1,14 +1,15 @@
-FROM python:3.7.5-slim-buster AS build
+FROM python:3.9.0-slim-buster AS build
 
-ADD ./requirements.txt /app/requirements.txt
 WORKDIR /app
+COPY requirements.txt .
 
-RUN apt update && apt install git build-essential -y && pip install -r /app/requirements.txt
+RUN apt update && apt install build-essential zlib1g-dev libjpeg62-turbo-dev -y && pip install -r requirements.txt
 
-FROM python:3.7.5-slim-buster AS run
+FROM python:3.9.0-slim-buster AS run
 
-COPY --from=build /usr/local/lib/python3.7/site-packages /usr/local/lib/python3.7/site-packages
-ADD . /app
+COPY --from=build /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY . /app
+RUN apt update && apt install zlib1g-dev libjpeg62-turbo -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/mathbot
 

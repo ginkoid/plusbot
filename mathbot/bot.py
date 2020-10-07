@@ -58,17 +58,8 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 			chunk_guilds_at_startup=False,
 			intents=discord.Intents(
 				guilds=True,
-				members=False,
-				bans=False,
-				emojis=False,
-				integrations=False,
-				webhooks=False,
-				invites=False,
-				voice_states=False,
-				presences=False,
 				messages=True,
-				reactions=True,
-				typing=False,
+				reactions=True
 			)
 		)
 		self.parameters = parameters
