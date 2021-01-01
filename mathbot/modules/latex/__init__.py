@@ -16,18 +16,22 @@ import imageutil
 import core.help
 import discord
 import json
+import struct
 from queuedict import QueueDict
 from open_relative import *
 from discord.ext.commands import command, Cog
 from utils import is_private, MessageEditGuard
 from contextlib import suppress
+from enum import IntEnum
 
 core.help.load_from_file('./help/latex.md')
 
-
-LATEX_SERVER_URL = 'https://rtex.probablyaweb.site/api/v2'
 DELETE_EMOJI = '🗑'
 
+class LatexCodes(IntEnum):
+	png = 0
+	texError = 1
+	magickError = 2
 
 # Load data from external files
 
@@ -75,20 +79,15 @@ class LatexModule(Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
-	@command(aliases=['latex', 'rtex'])
+	@command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
 	async def tex(self, context, *, latex=''):
-		await self.handle(context.message, latex, is_inline=False)
-
-	@command(aliases=['wtex'])
-	@core.settings.command_allowed('c-tex')
-	async def texw(self, context, *, latex=''):
-		await self.handle(context.message, latex, wide=True, is_inline=False)
+		await self.handle(context.message, latex, math_mode=False)
 
 	@command(aliases=['ptex'])
 	@core.settings.command_allowed('c-tex')
 	async def texp(self, context, *, latex=''):
-		await self.handle(context.message, latex, noblock=True, is_inline=False)
+		await self.handle(context.message, latex, math_mode=True)
 
 	@Cog.listener()
 	async def on_message_discarded(self, message):
@@ -96,36 +95,30 @@ class LatexModule(Cog):
 			if is_private(message.channel) or (await self.bot.settings.resolve_message('c-tex', message) and await self.bot.settings.resolve_message('f-inline-tex', message)):
 				latex = extract_inline_tex(message.clean_content)
 				if latex != '':
-					await self.handle(message, latex, centre=False, is_inline=True)
+					await self.handle(message, latex, math_mode=True)
 
-	async def handle(self, message, source, *, is_inline, centre=True, wide=False, noblock=False):
+	async def handle(self, message, source, math_mode):
 		if source == '':
 			await message.channel.send('Type `=help tex` for information on how to use this command.')
 		else:
 			print(f'LaTeX - {message.author} {message.author.id} - {source}')
 			colour_back, colour_text = await self.get_colours(message.author)
-			# Content replacement has to happen last in case it introduces a marker
-			latex = TEMPLATE.replace('\\begin{#BLOCK}', '').replace('\\end{#BLOCK}', '') if noblock else TEMPLATE
-			latex = latex.replace('#COLOUR',  colour_text) \
-			             .replace('#PAPERTYPE', 'a2paper' if wide else 'a5paper') \
-			             .replace('#BLOCK', 'gather*' if centre else 'flushleft') \
-			             .replace('#CONTENT', process_latex(source, is_inline))
+			latex = TEMPLATE.replace('#COLOUR',  colour_text) \
+			             		.replace('#CONTENT', process_latex(source, math_mode))
 			await self.render_and_reply(
 				message,
 				latex,
-				colour_back,
-				oversampling=(1 if wide else 2)
+				colour_back
 			)
 
-	async def render_and_reply(self, message, latex, colour_back, *, oversampling):
+	async def render_and_reply(self, message, latex, colour_back):
 		with MessageEditGuard(message, message.channel, self.bot) as guard:
 			async with message.channel.typing():
 				sent_message = None
 				try:
-					render_result = await generate_image_online(
+					render_result = await self.generate_image_online(
 						latex,
-						colour_back,
-						oversampling=oversampling
+						colour_back
 					)
 				except asyncio.TimeoutError:
 					sent_message = await guard.send(LATEX_TIMEOUT_MESSAGE)
@@ -167,46 +160,38 @@ class LatexModule(Cog):
 		# Fallback in case of other weird things
 		return '36393F', 'f0f0f0'
 
-
-async def generate_image_online(latex, colour_back, *, oversampling):
-	payload = {
-		'format': 'png',
-		'code': latex.strip(),
-		'density': 220 * oversampling,
-		'quality': 100
-	}
-	async with aiohttp.ClientSession() as session:
-		try:
-			async with session.post(LATEX_SERVER_URL, json=payload, timeout=8) as loc_req:
-				loc_req.raise_for_status()
-				jdata = await loc_req.json()
-				if jdata['status'] == 'error':
-					print('Rendering error')
-					raise RenderingError(jdata.get('log'))
-				filename = jdata['filename']
-			# Now actually get the image
-			async with session.get(LATEX_SERVER_URL + '/' + filename, timeout=3) as img_req:
-				img_req.raise_for_status()
-				fo = io.BytesIO(await img_req.read())
-				image = PIL.Image.open(fo).convert('RGBA')
-		except aiohttp.client_exceptions.ClientResponseError as e:
-			print('Client response error')
+	async def generate_image_online(self, latex, colour_back):
+		hostname = self.bot.parameters.get('latex hostname')
+		port = self.bot.parameters.get('latex port')
+		reader, writer = await asyncio.open_connection(hostname, port)
+		request_body = latex.encode()
+		writer.write(struct.pack('<I', len(request_body)))
+		writer.write(request_body)
+		await writer.drain()
+		response = await reader.read()
+		writer.close()
+		if len(response) == 0:
 			raise RenderingError(None)
-	if image.width <= 2 or image.height <= 2:
-		print('Image is empty')
-		raise RenderingError(None)
-	border_size = 5 * oversampling
-	colour_back = imageutil.hex_to_tuple(colour_back)
-	width, height = image.size
-	backing = imageutil.new_monocolour((width + border_size * 2, height + border_size * 2), colour_back)
-	backing.paste(image, (border_size, border_size), image)
-	if oversampling != 1:
-		backing = backing.resize((backing.width // oversampling, backing.height // oversampling), resample = PIL.Image.BICUBIC)
-	fobj = io.BytesIO()
-	backing.save(fobj, format='PNG')
-	fobj = io.BytesIO(fobj.getvalue())
-	return fobj
-
+		code, = struct.unpack('<I', response[:4])
+		response_body = response[4:]
+		if code == LatexCodes.texError or code == LatexCodes.magickError:
+			raise RenderingError(response_body.decode())
+		if code != LatexCodes.png:
+			raise RenderingError(response.decode())
+		fo = io.BytesIO(response_body)
+		image = PIL.Image.open(fo).convert('RGBA')
+		if image.width <= 2 or image.height <= 2:
+			print('Image is empty')
+			raise RenderingError(None)
+		border_size = 5
+		colour_back = imageutil.hex_to_tuple(colour_back)
+		width, height = image.size
+		backing = imageutil.new_monocolour((width + border_size * 2, height + border_size * 2), colour_back)
+		backing.paste(image, (border_size, border_size), image)
+		fobj = io.BytesIO()
+		backing.save(fobj, format='PNG')
+		fobj.seek(0)
+		return fobj
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))
@@ -229,7 +214,7 @@ def extract_inline_tex(content):
 
 BLOCKFORMAT_REGEX = re.compile('^```(?:tex\n)?((?:.|\n)*)```$')
 
-def process_latex(latex, is_inline):
+def process_latex(latex, math_mode):
 	latex = latex.strip(' \n')
 	blockformat = re.match(BLOCKFORMAT_REGEX, latex)
 	if blockformat:
@@ -237,6 +222,8 @@ def process_latex(latex, is_inline):
 	for key, value in TEX_REPLACEMENTS.items():
 		if key in latex:
 			latex = latex.replace(key, value)
+	if not math_mode:
+		latex = f'\\( {latex} \\)'
 	return latex
 
 

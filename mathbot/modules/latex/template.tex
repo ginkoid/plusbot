@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[border=1]{standalone}
 
 \usepackage[utf8]{inputenc}
 \usepackage{amsfonts}
@@ -7,27 +7,21 @@
 \usepackage{chemfig}
 \usepackage[siunitx, american]{circuitikz}
 \usepackage{mathtools}
-\usepackage{esint} % Having this before mathtools causes problems
+\usepackage{esint}
 \usepackage{mhchem}
 \usepackage{tikz-cd}
 \usepackage{color}
 \usepackage{xcolor}
 \usepackage{cancel}
-\usepackage[#PAPERTYPE]{geometry}
 \usepackage{dsfont}
 \usepackage{bm}
 \usepackage{nicefrac}
 \usepackage{physics}
 
-% The physics package redifines \div to be "divergence",
-% but that's not what anyone wants
 \renewcommand{\div}{\divisionsymbol}
-
-% Hebrew characters (from https://tex.stackexchange.com/a/226850)
 \DeclareFontFamily{U}{rcjhbltx}{}
 \DeclareFontShape{U}{rcjhbltx}{m}{n}{<->rcjhbltx}{}
 \DeclareSymbolFont{hebrewletters}{U}{rcjhbltx}{m}{n}
-% remove the definitions from amssymb
 \let\aleph\relax\let\beth\relax
 \let\gimel\relax\let\daleth\relax
 \DeclareMathSymbol{\aleph}{\mathord}{hebrewletters}{39}
@@ -40,7 +34,6 @@
 \DeclareMathSymbol{\tsadi}{\mathord}{hebrewletters}{118}
 \DeclareMathSymbol{\qof}{\mathord}{hebrewletters}{113}
 \DeclareMathSymbol{\shin}{\mathord}{hebrewletters}{152}
-
 \newcommand{\bbR}{\mathbb{R}}
 \newcommand{\bbQ}{\mathbb{Q}}
 \newcommand{\bbC}{\mathbb{C}}
@@ -57,7 +50,6 @@
 \newcommand{\ceil}[1]{\left\lceil{#1}\right\rceil}
 \newcommand{\floor}[1]{\left\lfloor{#1}\right\rfloor}
 \newcommand{\lif}{\rightarrow}
-
 \newcommand{\calA}{\mathcal{A}}
 \newcommand{\calB}{\mathcal{B}}
 \newcommand{\calC}{\mathcal{C}}
@@ -87,17 +79,8 @@
 
 \begin{document}
 
-\pagenumbering{gobble}
+\color[HTML]{#COLOUR}
 
-% #COLOUR is the replaced with specified text colour.
-\definecolor{my_colour}{HTML}{#COLOUR}
-\color{my_colour}
-
-% #BLOCK is replaced by either gather* or flushleft, depending on
-% whether it's an explicit invocation or a an inline command
-\begin{#BLOCK}
-% #CONTENT gets replaced by users's actual input
 #CONTENT
-\end{#BLOCK}
 
 \end{document}

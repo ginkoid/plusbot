@@ -1,4 +1,4 @@
-''' 
+'''
 
 	Wolfram module
 
@@ -265,7 +265,7 @@ class WolframModule(Cog):
 					except discord.errors.NotFound:
 						pass
 				await asyncio.gather(*[
-					get_and_delete(i) for i in data['image ids'] + [data['message id']]
+					get_and_delete(i) for i in data['image ids'] + ([data['message id']] if 'message id' in data else [])
 				])
 
 	async def answer_query(self, ctx, query, assumptions=[], small=False, debug=False):
@@ -334,7 +334,6 @@ class WolframModule(Cog):
 			messages = []
 			for img in process_images(sections_reduced, is_dark):
 				messages.append(await ctx.send(file=image_to_discord_file(img, 'result.png')))
-				await asyncio.sleep(1.05)
 
 			# Assuptions are currently disabled because of a 'bug'.
 			# I think it's that discord sends emoji reaction updates
@@ -342,12 +341,16 @@ class WolframModule(Cog):
 			# that the message is in, which means that the shard
 			# receiving the notif doesn't know what to do with the info
 			# it receives.
-			embed, show_assuptions = await self.format_adm(ctx, result.assumptions, small)
+			embed, send_embed, show_assuptions = await self.format_adm(ctx, result.assumptions, small)
 
-			posted = await ctx.send(embed=embed)
+			if send_embed:
+				posted = await ctx.send(embed=embed)
 
 			try:
-				await posted.add_reaction(DELETE_EMOJI)
+				if send_embed:
+					await posted.add_reaction(DELETE_EMOJI)
+				else:
+					await messages[-1].add_reaction(DELETE_EMOJI)
 				if not small and show_assuptions:
 					await self.add_reaction_emoji(posted, result.assumptions)
 			except discord.errors.NotFound:
@@ -357,24 +360,26 @@ class WolframModule(Cog):
 				'query': query,
 				'used': False,
 				'blame': author.id,
-				'channel id': posted.channel.id,
-				'message id': posted.id,
+				'channel id': channel.id,
 				'image ids': [i.id for i in messages],
 				'no change warning': False
 			}
-			await ctx.bot.keystore.set_json('wolfram', 'message', str(posted.id), payload, expire = 60 * 60 * 24)
+			if send_embed:
+				payload['message id'] = posted.id
+			await ctx.bot.keystore.set_json('wolfram', 'message', str(posted.id if send_embed else messages[-1].id), payload, expire = 60 * 60 * 24)
 
 			print('Done.')
 
 	@staticmethod
 	async def format_adm(ctx, assuptions, small):
 		embed = discord.Embed()
-		if not is_private(ctx.channel) and await ctx.bot.settings.resolve('f-wolf-mention', ctx.channel, ctx.channel.guild):
+		mention = await ctx.bot.settings.resolve('f-wolf-mention', ctx.channel, ctx.channel.guild)
+		if not is_private(ctx.channel) and mention:
 			embed.add_field(name='Query made by', value=ctx.author.mention)
 		if not small and assuptions and assuptions.count > 0 and len(str(assuptions)) <= 800:
 			embed.add_field(name='Assumptions', value=str(assuptions))
-			return embed, True
-		return embed, False
+			return embed, True, True
+		return embed, mention, False
 
 	async def add_reaction_emoji(self, message, assumptions):
 		''' Adds assumption emoji to a message. '''

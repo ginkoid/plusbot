@@ -22,8 +22,7 @@ SETTINGS = {
 	'f-tex-delete': {'redirect': 'f-delete-tex', 'cannon-name': True},
 	'f-tex-trashcan': {'default': True},
 	'f-roll-unlimited': {'default': False},
-	'm-disabled-cmd': {'default': True},
-	'x-bonus': {'default': True},
+	'm-disabled-cmd': {'default': True}
 }
 
 

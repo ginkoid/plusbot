@@ -1,6 +1,10 @@
 {
 	"release": "development",
 	"token": null,
+	"latex": {
+		"hostname": "localhost",
+		"port": 5000
+	},
 	"keystore": {
 		"disk": {
 			"filename": "keystore.json"

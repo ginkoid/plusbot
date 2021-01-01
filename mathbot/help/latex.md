@@ -4,8 +4,6 @@
 
 The `{{prefix}}tex` command is used render *LaTeX* equations.
 
-The *LaTeX* rendering is done by <https://rtex.probablyaweb.site/>
-
 You can use the `{{prefix}}theme` command to change the colour of the results.
 
 ## Examples
@@ -18,7 +16,7 @@ You can use the `{{prefix}}theme` command to change the colour of the results.
 
 ## Limitations
 
-The bot currently uses an external rendering service. The following features are known to break things:
+The following features are known to break things:
 
  - `$` to start and end the equations. These are not required, and may do strange things. Use `\text{words}` to place text.
  - `\usepackage`, for any reason.
@@ -41,10 +39,7 @@ Examples
 
 ## Alternative forms
 
-The `{{prefix}}texw` command (**w** for **wide**) will increase the with of the "paper", allowing for wider equations.
-
-The `{{prefix}}texp` command (**p** for **plain**) will remove the `\begin` and `\end` boilerplate, allowing you to add your own. This is useful if you're using `tikzcd` or similar.
-
+The `{{prefix}}texp` command (**p** for **plain**) will remove math mode boilerplate, allowing you to add your own. This is useful if you're using `tikzcd` or similar.
 
 ## Deleting Commands
 
