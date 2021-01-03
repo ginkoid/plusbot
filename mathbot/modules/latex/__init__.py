@@ -17,6 +17,7 @@ import core.help
 import discord
 import json
 import struct
+import time
 from queuedict import QueueDict
 from open_relative import *
 from discord.ext.commands import command, Cog
@@ -163,12 +164,14 @@ class LatexModule(Cog):
 	async def generate_image_online(self, latex, colour_back):
 		hostname = self.bot.parameters.get('latex hostname')
 		port = self.bot.parameters.get('latex port')
+		time_start = time.perf_counter()
 		reader, writer = await asyncio.open_connection(hostname, port)
 		request_body = latex.encode()
 		writer.write(struct.pack('<I', len(request_body)))
 		writer.write(request_body)
 		await writer.drain()
 		response = await reader.read()
+		print('LaTeX render', time.perf_counter() - time_start)
 		writer.close()
 		if len(response) == 0:
 			raise RenderingError(None)
