@@ -84,7 +84,7 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 		print('on_resumed')
 
 	def should_respond_to_message(self, message):
-		if self.release == 'production' and message.author.bot:
+		if self.release == 'release' and message.author.bot:
 			return False
 		if message.author.id in self.blocked_users:
 			return False
