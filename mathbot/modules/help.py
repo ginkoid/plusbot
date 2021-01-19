@@ -38,7 +38,7 @@ class HelpModule(Cog):
 
 		if prefix.strip() in [f'<@{context.bot.user.id}>', f'<@!{context.bot.user.id}>']:
 			prefix = '@plusbot '
-		
+
 		try:
 			for index, page in enumerate(found_doc):
 				page = doubleformat(
@@ -69,7 +69,7 @@ class HelpModule(Cog):
 	def _suggest_topics(self, typo):
 		suggestions = core.help.get_similar(typo)
 		if not suggestions:
-			return f"Thet help topic does not exist."
+			return f"That help topic does not exist."
 		elif len(suggestions) == 1:
 			return f"That help topic does not exist.\nMaybe you meant `{suggestions[0]}`?"
 		return f"That help topic does not exist.\nMaybe you meant one of: {', '.join(map('`{}`'.format, suggestions))}?"

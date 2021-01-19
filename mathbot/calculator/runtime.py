@@ -18,7 +18,7 @@ import calculator.formatter as formatter
 import calculator.crucible as crucible
 
 
-ALL_SYMPY_CLASSES = tuple(sympy.core.all_classes)
+ALL_SYMPY_CLASSES = tuple(sympy.core.core.all_classes)
 
 
 def protect_sympy_function(func):
@@ -174,7 +174,7 @@ def _extract_from_sympy():
 			return function(*args)
 		return protect_sympy_function(_replacement)
 	names = '''
-		re im sign Abs arg conjugate 
+		re im sign Abs arg conjugate
 		sin cos tan cot sec csc sinc asin acos atan acot asec acsc atan2 sinh cosh
 		tanh coth sech csch asinh acosh atanh acoth asech acsch ceiling floor frac
 		exp root sqrt pi E I gcd lcm

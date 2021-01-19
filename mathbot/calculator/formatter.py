@@ -11,7 +11,7 @@ import calculator.errors
 import re
 
 
-ALL_SYMPY_CLASSES = tuple(sympy.core.all_classes) # pylint: disable=no-member
+ALL_SYMPY_CLASSES = tuple(sympy.core.core.all_classes)
 ELEMENT_SEPARATOR = '  '
 
 

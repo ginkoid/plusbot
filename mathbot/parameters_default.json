@@ -10,18 +10,13 @@
 			"filename": "keystore.json"
 		},
 		"redis": {
-			"url": "redis://user:@localhost:6379",
+			"url": "redis://localhost:6379",
 			"number": 0
 		},
 		"mode": "disk"
 	},
 	"wolfram": {
 		"key": null
-	},
-	"automata": {
-		"token": null,
-		"target": null,
-		"channel": null
 	},
 	"error-reporting": {
 		"channel": null

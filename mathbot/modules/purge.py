@@ -32,7 +32,6 @@ class PurgeModule(Cog):
 						number -= 1
 					except discord.errors.NotFound:
 						pass
-					await asyncio.sleep(1)
 
 def setup(bot):
 	bot.add_cog(PurgeModule())

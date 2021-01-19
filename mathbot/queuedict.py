@@ -33,7 +33,7 @@ class QueueDict:
 		self._dict[key] = (curtime, value)
 		self._dict.move_to_end(key, last=False)
 
-	def __getitem__(self):
+	def __getitem__(self, key):
 		self._cleanup()
 		return self._dict[key][1]
 

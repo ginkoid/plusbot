@@ -158,7 +158,7 @@ class Terminal:
                 code_segment = self.builder.build(ast)
                 # for index, byte in enumerate(bytes):
                 #   print('{:3d} - {}'.format(index, byte))
-                
+
                 if self.timeout:
                     async with async_timeout.timeout(5):
                         result_items = await self.interpereter.run_async(segment=code_segment, get_entire_stack=True)
@@ -168,7 +168,7 @@ class Terminal:
                 details['result'] = result_items
                 worked = True
                 for result in result_items:
-                    if isinstance(result, tuple(sympy.core.all_classes)):
+                    if isinstance(result, tuple(sympy.core.core.all_classes)):
                         f_res = await calculator.crucible.run(
                             calculator.formatter.format,
                             (result,),

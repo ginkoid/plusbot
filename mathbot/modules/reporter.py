@@ -31,7 +31,7 @@ class ReporterModule(Cog):
 	@Cog.listener()
 	async def on_ready(self):
 		if self.task is not None:
-			self.task.end()
+			return
 		self.task = ReporterTask(self.bot)
 
 
@@ -47,7 +47,6 @@ class ReporterTask:
 
 	async def send_reports(self):
 		print('Shard', self.bot.shard_ids, 'started reporting task.')
-		await asyncio.sleep(10)
 		try:
 			report_channel = await self.get_report_channel()
 			if report_channel is None:
@@ -99,9 +98,10 @@ async def cprint_and_report(bot, color: str, string: str):
 
 
 async def report(bot, string: str):
-	if bot.parameters.get('error-reporting channel'):
+	if 'channel' in bot.parameters.get('error-reporting'):
 		await bot.keystore.lpush('error-report', string)
-	await report_via_webhook_only(bot, string)
+	else:
+		await report_via_webhook_only(bot, string)
 
 
 async def report_via_webhook_only(bot, string: str):

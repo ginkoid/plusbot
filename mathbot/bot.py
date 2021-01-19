@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import os
 import sys
 import warnings
 import logging
 import asyncio
-import re
-import json
-import typing
 import traceback
-import objgraph
-import gc
-import time
 
 import termcolor
 import discord
@@ -25,7 +18,7 @@ import core.settings
 import utils
 
 from queuedict import QueueDict
-from modules.reporter import report, report_via_webhook_only
+from modules.reporter import report
 
 from patrons import PatronageMixin
 
@@ -83,8 +76,6 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 	async def on_ready(self):
 		print('on_ready')
 		self._connection.emoji = []
-		gc.collect()
-		objgraph.show_most_common_types()
 
 	async def on_disconnect(self):
 		print('on_disconnect')
@@ -169,7 +160,6 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 				await i.delete()
 			except (discord.errors.Forbidden, discord.errors.NotFound):
 				pass
-			await asyncio.sleep(2)
 
 	def message_link(self, invoker, sent):
 		lst = self.command_output_map.get(invoker.id, default=[])
@@ -247,12 +237,9 @@ def run(parameters):
 
 @utils.listify
 def _get_extensions(parameters):
-	yield 'modules.about'
 	yield 'modules.blame'
 	yield 'modules.calcmod'
 	yield 'modules.dice'
-	# yield 'modules.greeter'
-	yield 'modules.heartbeat'
 	yield 'modules.help'
 	yield 'modules.latex'
 	yield 'modules.purge'
@@ -304,7 +291,6 @@ async def _determine_prefix(bot, message):
 			# Only report errors via the webhook since the redis server
 			# might be unavailable at this point
 			bot.closing_due_to_indeterminite_prefix = True
-			await report_via_webhook_only(bot, m)
 			await bot.close()
 		return NO_VALID_PREFIXES
 

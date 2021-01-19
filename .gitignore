@@ -1,19 +1,5 @@
-*.png
 __pycache__
-*.sublime*
-.cache
-*.zip
-ignore
-keystore.json
-parameters.json
-# virtualenv directory
-venv/
-.flake8
-# coverage.py
-.coverage*
-htmlcov
-.mypy_cache
-*.pyc
-.pytest_cache
-.vscode/
-Pipfile.lock
+*.py[cod]
+/venv
+/mathbot/keystore.json
+/mathbot/parameters.json
