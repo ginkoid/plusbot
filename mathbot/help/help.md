@@ -17,6 +17,5 @@ More help is also available:
 	`{{prefix}}help topic` - Get help about a particular topic or command.
 	`{{prefix}}help management` - Get information about commands for server owners and moderators.
 	`{{prefix}}help settings` - Get information about settings.
-	`{{prefix}}about` - General information about the bot.
 
 All commands can be invoked by mentioning the bot. For example, the command `@{{username}} prefix` will always tell you the bot's prefix on the current server even if you don't know what it is.

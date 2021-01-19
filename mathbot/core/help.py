@@ -79,3 +79,8 @@ def load_from_file(filename, topics = None):
 				print(i)
 				print('-------------------------------------------------')
 	add(topics, pages, from_file = True)
+
+load_from_file('./help/help.md', topics = [''])
+load_from_file('./help/about.md')
+load_from_file('./help/management.md')
+load_from_file('./help/commands.md')
