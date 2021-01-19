@@ -32,10 +32,8 @@ DELETE_EMOJI = '🗑'
 class LatexCodes(IntEnum):
 	png = 0
 	texError = 1
-	magickError = 2
 
 # Load data from external files
-
 def load_template():
 	with open_relative('template.tex', encoding = 'utf-8') as f:
 		raw = f.read()
@@ -164,23 +162,23 @@ class LatexModule(Cog):
 	async def generate_image_online(self, latex, colour_back):
 		hostname = self.bot.parameters.get('latex hostname')
 		port = self.bot.parameters.get('latex port')
-		time_start = time.perf_counter()
+		time_render = time.perf_counter()
 		reader, writer = await asyncio.open_connection(hostname, port)
 		request_body = latex.encode()
 		writer.write(struct.pack('<I', len(request_body)))
 		writer.write(request_body)
 		await writer.drain()
 		response = await reader.read()
-		print('LaTeX render', time.perf_counter() - time_start)
 		writer.close()
 		if len(response) == 0:
 			raise RenderingError(None)
 		code, = struct.unpack('<I', response[:4])
 		response_body = response[4:]
-		if code == LatexCodes.texError or code == LatexCodes.magickError:
+		if code == LatexCodes.texError:
 			raise RenderingError(response_body.decode())
 		if code != LatexCodes.png:
 			raise RenderingError(response.decode())
+		time_background = time.perf_counter()
 		fo = io.BytesIO(response_body)
 		image = PIL.Image.open(fo).convert('RGBA')
 		if image.width <= 2 or image.height <= 2:
@@ -194,6 +192,7 @@ class LatexModule(Cog):
 		fobj = io.BytesIO()
 		backing.save(fobj, format='PNG')
 		fobj.seek(0)
+		print('Render', time_background - time_render, 'Background', time.perf_counter() - time_background)
 		return fobj
 
 def extract_inline_tex(content):
@@ -226,7 +225,7 @@ def process_latex(latex, math_mode):
 		if key in latex:
 			latex = latex.replace(key, value)
 	if not math_mode:
-		latex = f'\\( {latex} \\)'
+		latex = f'\\( \\displaystyle {latex} \\)'
 	return latex
 
 
