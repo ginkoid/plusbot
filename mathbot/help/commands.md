@@ -10,7 +10,6 @@ List of commands:
 - `{{prefix}}roll` - Roll dice
 - `{{prefix}}set` - Modify bot settings and permissions
 - `{{prefix}}setprefix` - Set the bot's prefix
-- `{{prefix}}stats` - Number of servers, uptime, etc.
 - `{{prefix}}tex` - Render LaTeX
 - `{{prefix}}theme` - Changes the colour of the output
 - `{{prefix}}wolf` - Query Wofram|Alpha
