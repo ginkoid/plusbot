@@ -100,9 +100,13 @@ class LatexModule(Cog):
 		if source == '':
 			await message.channel.send('Type `=help tex` for information on how to use this command.')
 		else:
-			print(f'LaTeX - {message.author} {message.author.id} - {source}')
+			print(json.dumps({
+				"author_id": message.author.id,
+				"content": source
+			}))
 			colour_back, colour_text = await self.get_colours(message.author)
-			latex = TEMPLATE.replace('#COLOUR',  colour_text) \
+			latex = TEMPLATE.replace('#COLOR_BACK',  colour_back) \
+			             		.replace('#COLOR_TEXT', colour_text) \
 			             		.replace('#CONTENT', process_latex(source, math_mode))
 			await self.render_and_reply(
 				message,
@@ -115,10 +119,7 @@ class LatexModule(Cog):
 			async with message.channel.typing():
 				sent_message = None
 				try:
-					render_result = await self.generate_image_online(
-						latex,
-						colour_back
-					)
+					render_result = await self.generate_image_online(latex)
 				except asyncio.TimeoutError:
 					sent_message = await guard.send(LATEX_TIMEOUT_MESSAGE)
 				except RenderingError as e:
@@ -159,7 +160,7 @@ class LatexModule(Cog):
 		# Fallback in case of other weird things
 		return '36393F', 'f0f0f0'
 
-	async def generate_image_online(self, latex, colour_back):
+	async def generate_image_online(self, latex):
 		hostname = self.bot.parameters.get('latex hostname')
 		port = self.bot.parameters.get('latex port')
 		time_render = time.perf_counter()
@@ -170,6 +171,7 @@ class LatexModule(Cog):
 		await writer.drain()
 		response = await reader.read()
 		writer.close()
+		print('Render time', time.perf_counter() - time_render)
 		if len(response) == 0:
 			raise RenderingError(None)
 		code, = struct.unpack('<I', response[:4])
@@ -178,22 +180,7 @@ class LatexModule(Cog):
 			raise RenderingError(response_body.decode())
 		if code != LatexCodes.png:
 			raise RenderingError(response.decode())
-		time_background = time.perf_counter()
-		fo = io.BytesIO(response_body)
-		image = PIL.Image.open(fo).convert('RGBA')
-		if image.width <= 2 or image.height <= 2:
-			print('Image is empty')
-			raise RenderingError(None)
-		border_size = 5
-		colour_back = imageutil.hex_to_tuple(colour_back)
-		width, height = image.size
-		backing = imageutil.new_monocolour((width + border_size * 2, height + border_size * 2), colour_back)
-		backing.paste(image, (border_size, border_size), image)
-		fobj = io.BytesIO()
-		backing.save(fobj, format='PNG')
-		fobj.seek(0)
-		print('Render', time_background - time_render, 'Background', time.perf_counter() - time_background)
-		return fobj
+		return io.BytesIO(response_body)
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))

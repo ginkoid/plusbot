@@ -17,7 +17,7 @@ import async_timeout
 import json
 import time
 import traceback
-import typing
+from typing import List
 import discord
 import abc
 import functools
@@ -142,7 +142,7 @@ class CalculatorModule(Cog):
 				description='Parameter was not a gist url',
 				colour=discord.Colour.red()
 			)
-		# Download 
+		# Download
 		async with aiohttp.ClientSession() as session:
 			lib_info = await download_library(session, url)
 			if isinstance(lib_info, LibraryDownloadIssue):
@@ -456,7 +456,7 @@ class LibraryDownloadError(Exception):
 		self.reason = reason
 
 
-async def download_libraries(urls: [str]) -> [LibraryDownloadResult]:
+async def download_libraries(urls: List[str]) -> List[LibraryDownloadResult]:
 	async with aiohttp.ClientSession() as session:
 		results = await asyncio.gather(*[
 			download_library(session, i) for i in urls

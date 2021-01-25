@@ -54,11 +54,6 @@ Disable the `=wolf` command on a server:
 Enable the `=calc` command on a single channel:
 `{{prefix}}set channel c-calc enable`
 
-## Troubleshooting
-
-Ensure you are typing words *exactly* as shown.
-If you are still having problems you can ask on the official server: {{server_link}}
-
 ## Extra tools
 
 To check which settings apply to a particular channel, run the `{{prefix}}checkallsettings` command in that channel.
