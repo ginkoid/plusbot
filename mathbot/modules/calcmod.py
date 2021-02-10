@@ -405,13 +405,14 @@ def history_grouping(commands):
 	current = []
 	current_size = 0
 	for i in commands:
-		i_size = len(i) + 12 # Length of string: '```\n{}\n```\n'
-		if i_size + current_size > 1800:
+		content = i.replace('`', '`\N{zero width non-joiner}')
+		content_size = len(content) + 12 # Length of string: '```\n{}\n```\n'
+		if content_size + current_size > 1800:
 			yield '```\n{}\n```'.format(''.join(current))
 			current = []
 			current_size = 0
-		current.append(i + '\n')
-		current_size += i_size
+		current.append(content + '\n')
+		current_size += content_size
 	yield '```\n{}\n```'.format(''.join(current))
 
 
