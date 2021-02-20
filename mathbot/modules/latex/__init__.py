@@ -152,13 +152,13 @@ class LatexModule(Cog):
 					await reaction.message.delete()
 
 	async def get_colours(self, user):
-		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'dark'
+		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
 		if colour_setting == 'light':
 			return 'ffffff', '202020'
 		elif colour_setting == 'dark':
 			return '36393F', 'f0f0f0'
 		# Fallback in case of other weird things
-		return '36393F', 'f0f0f0'
+		return 'ffffff', '202020'
 
 	async def generate_image_online(self, latex):
 		hostname = self.bot.parameters.get('latex hostname')
