@@ -124,7 +124,7 @@ class LatexModule(Cog):
 						m = err[0].strip("!\n")
 					else:
 						m = e.log
-						sent_message = await guard.send(f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+					sent_message = await guard.send(f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
 				else:
 					sent_message = await guard.send(file=discord.File(render_result, 'latex.png'))
 					if await self.bot.settings.resolve_message('f-tex-delete', message):
