@@ -108,13 +108,9 @@ class LatexModule(Cog):
 			latex = TEMPLATE.replace('#COLOR_BACK',  colour_back) \
 			             		.replace('#COLOR_TEXT', colour_text) \
 			             		.replace('#CONTENT', process_latex(source, math_mode))
-			await self.render_and_reply(
-				message,
-				latex,
-				colour_back
-			)
+			await self.render_and_reply(message, latex)
 
-	async def render_and_reply(self, message, latex, colour_back):
+	async def render_and_reply(self, message, latex):
 		with MessageEditGuard(message, message.channel, self.bot) as guard:
 			async with message.channel.typing():
 				sent_message = None
@@ -124,11 +120,11 @@ class LatexModule(Cog):
 					sent_message = await guard.send(LATEX_TIMEOUT_MESSAGE)
 				except RenderingError as e:
 					err = e.log is not None and re.search(r'^!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
-					if err and len(err[0]) < 1000:
+					if err:
 						m = err[0].strip("!\n")
-						sent_message = await guard.send(f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m}\n```')
 					else:
-						sent_message = await guard.send('Rendering failed. Check your code. You can edit your existing message if needed.')
+						m = e.log
+						sent_message = await guard.send(f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
 				else:
 					sent_message = await guard.send(file=discord.File(render_result, 'latex.png'))
 					if await self.bot.settings.resolve_message('f-tex-delete', message):
@@ -163,24 +159,19 @@ class LatexModule(Cog):
 	async def generate_image_online(self, latex):
 		hostname = self.bot.parameters.get('latex hostname')
 		port = self.bot.parameters.get('latex port')
-		time_render = time.perf_counter()
 		reader, writer = await asyncio.open_connection(hostname, port)
-		request_body = latex.encode()
-		writer.write(struct.pack('<I', len(request_body)))
-		writer.write(request_body)
+		request = latex.encode()
+		writer.write(struct.pack('!II', 0, len(request)))
+		writer.write(request)
 		await writer.drain()
-		response = await reader.read()
+		type, length = struct.unpack('!II', await reader.readexactly(8))
+		if type == LatexCodes.texError:
+			raise RenderingError((await reader.readexactly(length)).decode())
+		if type != LatexCodes.png:
+			raise RenderingError((await reader.read()).decode())
+		response = await reader.readexactly(length)
 		writer.close()
-		print('Render time', time.perf_counter() - time_render)
-		if len(response) == 0:
-			raise RenderingError(None)
-		code, = struct.unpack('<I', response[:4])
-		response_body = response[4:]
-		if code == LatexCodes.texError:
-			raise RenderingError(response_body.decode())
-		if code != LatexCodes.png:
-			raise RenderingError(response.decode())
-		return io.BytesIO(response_body)
+		return io.BytesIO(response)
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))
