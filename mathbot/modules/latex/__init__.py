@@ -166,8 +166,10 @@ class LatexModule(Cog):
 		await writer.drain()
 		type, length = struct.unpack('!II', await reader.readexactly(8))
 		if type == LatexCodes.texError:
+			writer.close()
 			raise RenderingError((await reader.readexactly(length)).decode())
 		if type != LatexCodes.png:
+			writer.close()
 			raise RenderingError((await reader.read()).decode())
 		response = await reader.readexactly(length)
 		writer.close()
