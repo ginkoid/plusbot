@@ -1,6 +1,2 @@
-.git
-**/__pycache__
-**/*.py[cod]
-venv
 mathbot/keystore.json
 mathbot/parameters.json
