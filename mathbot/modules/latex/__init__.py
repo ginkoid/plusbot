@@ -151,11 +151,10 @@ class LatexModule(Cog):
 
 	@Cog.listener()
 	async def on_reaction_add(self, reaction, user):
-		if not user.bot:
-			if reaction.emoji == DELETE_EMOJI:
-				blame = await self.bot.keystore.get_json('blame', str(reaction.message.id))
-				if blame is not None and blame['id'] == user.id:
-					await reaction.message.delete()
+		if not user.bot and reaction.emoji == DELETE_EMOJI:
+			blame = await self.bot.keystore.get_json('blame', str(reaction.message.id))
+			if blame is not None and blame['id'] == user.id:
+				await reaction.message.delete()
 
 	async def get_colours(self, user):
 		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
