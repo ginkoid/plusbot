@@ -57,7 +57,7 @@ class Redis(Driver):
 	async def ensure_started(self):
 		async with self.startup_lock:
 			if not self.started:
-				self.connection = await aioredis.create_redis_pool(self.url, timeout = 10)
+				self.connection = await aioredis.from_url(self.url, encoding="utf-8", decode_responses=True)
 				self.started = True
 				print('Connected to redis server!')
 
@@ -67,13 +67,12 @@ class Redis(Driver):
 			return None
 		if isinstance(value, int):
 			return value
-		string = value.decode('utf-8')
 		try:
-			integer = int(string)
+			integer = int(value)
 			return integer
 		except ValueError:
 			pass
-		return string
+		return value
 
 	async def get(self, key):
 		await self.ensure_started()
