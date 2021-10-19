@@ -18,6 +18,7 @@ import discord
 import json
 import struct
 import time
+import collections
 from queuedict import QueueDict
 from open_relative import *
 from discord.ext.commands import command, Cog
@@ -30,18 +31,9 @@ core.help.load_from_file('./help/latex.md')
 DELETE_EMOJI = '🗑'
 
 class LatexCodes(IntEnum):
-	png = 0
-	texError = 1
-
-# Load data from external files
-def load_template():
-	with open_relative('template.tex', encoding = 'utf-8') as f:
-		raw = f.read()
-	# Remove any comments from the template
-	cleaned = re.sub(r'%.*\n', '', raw)
-	return cleaned
-
-TEMPLATE = load_template()
+	ok = 0
+	errTex = 1
+	errGs = 2
 
 with open_relative('replacements.json', encoding = 'utf-8') as _f:
 	TEX_REPLACEMENTS = json.load(_f)
@@ -72,11 +64,34 @@ class RenderingError(Exception):
 	def __repr__(self):
 		return f'RenderingError@{id(self)}'
 
+class LatexPool:
+	def __init__(self, bot):
+		self.bot = bot
+		self.pool = collections.deque()
+		for i in range(self.bot.parameters.get('latex pool')):
+			self.add_conn()
+
+	def add_conn(self):
+		self.pool.append(self.bot.loop.create_task(self.connect()))
+
+	async def connect(self):
+		reader, writer = await asyncio.open_connection(
+			self.bot.parameters.get('latex hostname'),
+			self.bot.parameters.get('latex port'),
+		)
+		writer.write(b'\\begin{document}\n')
+		await writer.drain()
+		return reader, writer
+
+	async def get_conn(self):
+		self.add_conn()
+		return await self.pool.popleft()
 
 class LatexModule(Cog):
 
 	def __init__(self, bot):
 		self.bot = bot
+		self.pool = LatexPool(bot)
 
 	@command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
@@ -100,14 +115,9 @@ class LatexModule(Cog):
 		if source == '':
 			await message.channel.send('Type `=help tex` for information on how to use this command.')
 		else:
-			print(json.dumps({
-				"author_id": message.author.id,
-				"content": source
-			}))
+			print('latex render', message.author.id, source)
 			colour_back, colour_text = await self.get_colours(message.author)
-			latex = TEMPLATE.replace('#COLOR_BACK',  colour_back) \
-			             		.replace('#COLOR_TEXT', colour_text) \
-			             		.replace('#CONTENT', process_latex(source, math_mode))
+			latex = f'\\pagecolor[HTML]{{{colour_back}}}\\definecolor{{text}}{{HTML}}{{{colour_text}}}\\color{{text}}\\ctikzset{{color=text}}{process_latex(source, math_mode)}\n\\end{{document}}\n'
 			await self.render_and_reply(message, latex)
 
 	async def render_and_reply(self, message, latex):
@@ -115,11 +125,11 @@ class LatexModule(Cog):
 			async with message.channel.typing():
 				sent_message = None
 				try:
-					render_result = await self.generate_image_online(latex)
+					render_result = await self.generate_image(latex)
 				except asyncio.TimeoutError:
 					sent_message = await guard.send(LATEX_TIMEOUT_MESSAGE)
 				except RenderingError as e:
-					err = e.log is not None and re.search(r'^!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
+					err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
 					if err:
 						m = err[0].strip("!\n")
 					else:
@@ -156,26 +166,30 @@ class LatexModule(Cog):
 		# Fallback in case of other weird things
 		return 'ffffff', '202020'
 
-	async def generate_image_online(self, latex):
-		hostname = self.bot.parameters.get('latex hostname')
-		port = self.bot.parameters.get('latex port')
-		reader, writer = await asyncio.open_connection(hostname, port)
-		request = latex.encode()
-		writer.write(struct.pack('!II', 0, len(request)))
-		writer.write(request)
-		await writer.drain()
-		type, length = struct.unpack('!II', await reader.readexactly(8))
-		if type == LatexCodes.texError:
-			data = await reader.readexactly(length)
-			writer.close()
-			raise RenderingError(data.decode())
-		if type != LatexCodes.png:
-			data = await reader.read()
-			writer.close()
-			raise RenderingError(data.decode())
-		response = await reader.readexactly(length)
-		writer.close()
-		return io.BytesIO(response)
+	async def generate_image(self, latex, tries=0):
+		if tries > self.bot.parameters.get('latex pool'):
+			raise Exception('too many latex tries')
+		writer = None
+		try:
+			reader, writer = await self.pool.get_conn()
+			writer.write(latex.encode())
+			await writer.drain()
+			body = await asyncio.wait_for(reader.read(), timeout=5)
+			if body == b'':
+				raise Exception('empty body')
+		except asyncio.TimeoutError:
+			raise
+		except:
+			return await self.generate_image(latex, tries + 1)
+		finally:
+			if writer is not None:
+				writer.close()
+		code, = struct.unpack('!I', body[-4:])
+		if code == LatexCodes.errTex:
+			raise RenderingError(body[:-4].decode())
+		if code != LatexCodes.ok:
+			raise Exception('latex render: {body}')
+		return io.BytesIO(body[:-4])
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))
