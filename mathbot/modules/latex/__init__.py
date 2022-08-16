@@ -1,16 +1,11 @@
-import random
-import os
-import safe
 import PIL
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
 import io
 import core.settings
-import urllib
 import aiohttp
 import asyncio
-import traceback
 import re
 import imageutil
 import core.help
@@ -21,10 +16,12 @@ import time
 import collections
 from queuedict import QueueDict
 from open_relative import *
-from discord.ext.commands import command, Cog
+from discord.ext.commands import command, Cog, Context
 from utils import is_private, MessageEditGuard
 from contextlib import suppress
 from enum import IntEnum
+
+from discord.ext.commands.hybrid import hybrid_command
 
 core.help.load_from_file('./help/latex.md')
 
@@ -93,12 +90,12 @@ class LatexModule(Cog):
 		self.bot = bot
 		self.pool = LatexPool(bot)
 
-	@command(aliases=['latex', 'rtex', 'texw', 'wtex'])
+	@hybrid_command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
 	async def tex(self, context, *, latex=''):
 		await self.handle(context.message, latex, math_mode=False)
 
-	@command(aliases=['ptex'])
+	@hybrid_command(aliases=['ptex'])
 	@core.settings.command_allowed('c-tex')
 	async def texp(self, context, *, latex=''):
 		await self.handle(context.message, latex, math_mode=True)
@@ -113,7 +110,7 @@ class LatexModule(Cog):
 
 	async def handle(self, message, source, math_mode):
 		if source == '':
-			await message.channel.send('Type `=help tex` for information on how to use this command.')
+			await context.reply('Type `=help tex` for information on how to use this command.')
 		else:
 			print('latex render', message.author.id, source)
 			colour_back, colour_text = await self.get_colours(message.author)
@@ -127,7 +124,7 @@ class LatexModule(Cog):
 				try:
 					render_result = await self.generate_image(latex)
 				except asyncio.TimeoutError:
-					sent_message = await guard.send(LATEX_TIMEOUT_MESSAGE)
+					sent_message = await guard.reply(context, LATEX_TIMEOUT_MESSAGE)
 				except RenderingError as e:
 					err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
 					if err:
@@ -139,13 +136,13 @@ class LatexModule(Cog):
 					sent_message = await guard.send(file=discord.File(render_result, 'latex.png'))
 					if await self.bot.settings.resolve_message('f-tex-delete', message):
 						try:
-							await message.delete()
+							await context.message.delete()
 						except discord.errors.NotFound:
 							pass
 						except discord.errors.Forbidden:
-							await guard.send('Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
+							await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
 
-				if sent_message and await self.bot.settings.resolve_message('f-tex-trashcan', message):
+				if sent_message and await self.bot.settings.resolve_message('f-tex-trashcan', context.message):
 					with suppress(discord.errors.NotFound):
 						await sent_message.add_reaction(DELETE_EMOJI)
 
