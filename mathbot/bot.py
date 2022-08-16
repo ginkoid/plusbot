@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+from dataclasses import dataclass
 import sys
 import asyncio
 import traceback
@@ -36,6 +37,11 @@ The bot does not have all the permissions it requires in order to run in this ch
 
 Contact your server administrators to rectify this problem.
 '''
+
+
+@dataclass
+class Snowflake:
+	id: int
 
 
 class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
