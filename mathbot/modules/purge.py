@@ -34,4 +34,4 @@ class PurgeModule(Cog):
 						pass
 
 def setup(bot):
-	bot.add_cog(PurgeModule())
+	return bot.add_cog(PurgeModule())

@@ -225,4 +225,4 @@ def process_latex(latex, math_mode):
 
 
 def setup(bot):
-	bot.add_cog(LatexModule(bot))
+	return bot.add_cog(LatexModule(bot))
