@@ -245,6 +245,11 @@ def _get_extensions(parameters):
 		yield 'modules.echo'
 		yield 'modules.throws'
 	yield 'patrons' # This is a little weird.
+<<<<<<< HEAD
+=======
+	# if parameters.get('release') == 'release':
+	# 	yield 'modules.analytics'
+>>>>>>> 5d199f2 (Bugfixes and janky patches)
 
 
 def _create_keystore(parameters):
@@ -277,7 +282,7 @@ async def _determine_prefix(bot, message):
 	except Exception:
 		# Avoid a flood of error messages.
 		if not bot.closing_due_to_indeterminite_prefix:
-			m = f'Exception occurred while determining prefixes, shutting down bot (shards `{bot.shard_ids}`)'
+			m = f'Exception occurred while determining prefixes, ignoring (shards `{bot.shard_ids}`)'
 			termcolor.cprint('*' * len(m), 'red')
 			termcolor.cprint(m, 'red')
 			termcolor.cprint('*' * len(m), 'red')
@@ -285,8 +290,14 @@ async def _determine_prefix(bot, message):
 			# Only report errors via the webhook since the redis server
 			# might be unavailable at this point
 			bot.closing_due_to_indeterminite_prefix = True
+<<<<<<< HEAD
 			await bot.close()
 		return NO_VALID_PREFIXES
+=======
+			await report_via_webhook_only(bot, m)
+			# await bot.close()
+		return ['']
+>>>>>>> 5d199f2 (Bugfixes and janky patches)
 
 
 if __name__ == '__main__':

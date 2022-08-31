@@ -52,10 +52,13 @@ class Redis(Driver):
 		self.db_number = number
 		self.started = False
 		self.connection = None
-		self.startup_lock = asyncio.Lock()
+		self.startup_lock = None
 
 	async def ensure_started(self):
-		async with self.startup_lock:
+		# This is coroutine-atomic I'm pretty sure...
+		if self.startup_lock is None:
+			self.startup_lock = asyncio.Lock()
+		with await self.startup_lock:
 			if not self.started:
 				self.connection = await aioredis.from_url(self.url, encoding="utf-8", decode_responses=True)
 				self.started = True
