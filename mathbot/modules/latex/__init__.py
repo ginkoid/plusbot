@@ -66,11 +66,19 @@ class LatexPool:
 	def __init__(self, bot):
 		self.bot = bot
 		self.pool = collections.deque()
-		for i in range(self.bot.parameters.get('latex pool')):
+		for _ in range(self.bot.parameters.get('latex pool')):
 			self.add_conn()
+		self.bot.loop.create_task(self.refresh())
 
 	def add_conn(self):
 		self.pool.append(self.bot.loop.create_task(self.connect()))
+
+	async def refresh(self):
+		while self.pool:
+			await asyncio.sleep(60)
+			_, writer = await self.get_conn()
+			writer.close()
+			await writer.wait_closed()
 
 	async def connect(self):
 		reader, writer = await asyncio.open_connection(
@@ -157,7 +165,7 @@ class LatexModule(Cog):
 							await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
 
 				if sent_message and await self.bot.settings.resolve_message('f-tex-trashcan', context.message):
-					with suppress(discord.errors.NotFound, discord.errors.Forbidden):
+					with suppress(discord.errors.NotFound):
 						await sent_message.add_reaction(DELETE_EMOJI)
 
 	@Cog.listener()

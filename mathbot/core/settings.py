@@ -38,8 +38,8 @@ class Settings:
 			raise TypeError(f'{setting} is not a valid setting')
 		if isinstance(context, discord.TextChannel):
 			return f'{setting}:{context.id}' + ('c' if context.guild.id == context.id else '')
-		# if isinstance(context, discord.DMChannel):
-		# 	return f'{setting}:{context.id}'
+		if isinstance(context, discord.DMChannel):
+			return f'{setting}:{context.id}'
 		if isinstance(context, discord.ForumChannel):
 			return f'{setting}:{context.id}-forum-channel'
 		if isinstance(context, discord.Thread):

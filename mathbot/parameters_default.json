@@ -1,9 +1,11 @@
 {
 	"release": "development",
 	"token": null,
+	"admin_id": 0,
 	"latex": {
 		"hostname": "localhost",
-		"port": 5000
+		"port": 5000,
+		"pool": 1
 	},
 	"keystore": {
 		"disk": {

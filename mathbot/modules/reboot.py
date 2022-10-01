@@ -3,11 +3,13 @@ import subprocess
 import modules.reporter
 
 class Reboot(Cog):
+	def __init__(self, bot):
+		self.bot = bot
 
 	@command()
 	async def sync_commands_global(self, ctx: Context):
 		# TODO: Make this userid set in parameters.json
-		if ctx.author.id == 133804143721578505:
+		if ctx.author.id == self.bot.parameters.get('admin_id'):
 			await ctx.send('Syncing global commands')
 			async with ctx.typing():
 				print('Syncing global commands...')
@@ -16,4 +18,4 @@ class Reboot(Cog):
 				await ctx.send('Done')
 
 def setup(bot):
-	return bot.add_cog(Reboot())
+	return bot.add_cog(Reboot(bot))

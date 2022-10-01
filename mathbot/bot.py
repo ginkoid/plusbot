@@ -6,6 +6,8 @@ import sys
 import asyncio
 import traceback
 import time
+import warnings
+import logging
 
 import termcolor
 import discord
@@ -24,7 +26,6 @@ from patrons import PatronageMixin
 
 
 warnings.simplefilter('default')
-logging.basicConfig(level = logging.INFO)
 sys.setrecursionlimit(2500)
 
 
@@ -49,7 +50,12 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 	def __init__(self, parameters):
 		super().__init__(
 			command_prefix=_determine_prefix,
-			intents=discord.Intents.default()
+			intents=discord.Intents(
+				guilds=True,
+				messages=True,
+				message_content=True,
+				reactions=True
+			),
 		)
 		self.parameters = parameters
 		self.release = parameters.get('release')
@@ -241,6 +247,7 @@ def _get_extensions(parameters):
 	yield 'modules.settings'
 	yield 'modules.wolfram'
 	yield 'modules.oeis'
+	yield 'modules.reboot'
 	if parameters.get('release') == 'development':
 		yield 'modules.echo'
 		yield 'modules.throws'
