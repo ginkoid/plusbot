@@ -211,7 +211,7 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 			await self.report_error(destination, error, human_details)
 
 	async def report_error(self, destination, error, human_details):
-		tb = ''.join(traceback.format_exception(etype=type(error), value=error, tb=error.__traceback__))
+		tb = ''.join(traceback.format_exception(type(error), value=error, tb=error.__traceback__))
 		termcolor.cprint(human_details, 'red')
 		termcolor.cprint(tb, 'blue')
 		try:
