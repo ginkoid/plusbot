@@ -50,9 +50,7 @@ Maybe your query was malformed?
 ERROR_MESSAGE_NO_RESULTS_BUT_TIMEOUTS = """Wolfram|Alpha didn't send a result back, \
 but reported that it timed out while performing calculations.
 
-You can try the query on the Wolfram|Alpha website. If it works there, this is a \
-misconfiguration of the bot and you should reporting it to DXsmiley on the official \
-server: https://discord.gg/JbJbRZS
+You can try the query on the Wolfram|Alpha website.
 """
 
 ERROR_MESSAGE_TIMEOUT = """Wolfram|Alpha query timed out.
@@ -87,7 +85,6 @@ FILTER_FAILURE_INTERPRETATION = '''\
 **The _result_ for that query contained one or more banned words and will not be shown.**
 The owner of this server has the power to turn this off.
 Alternatively, you can make the query by messaging this bot directly.
-Questions and requests should be directed to <@133804143721578505> on the official MathBot server: https://discord.gg/JbJbRZS
 '''
 
 NO_API_ERROR = '''
