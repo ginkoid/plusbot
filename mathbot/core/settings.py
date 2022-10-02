@@ -63,7 +63,7 @@ class Settings:
 
 	async def resolve_message(self, setting, message: discord.Message):
 		setting = redirect(setting)
-		if isinstance(message.channel, discord.DMChannel):
+		if isinstance(message.channel, discord.DMChannel) or message.channel.type == discord.ChannelType.private:
 			so = SETTINGS[setting]
 			return so.get('private', so['default'])
 		if isinstance(message.channel, discord.TextChannel):

@@ -115,12 +115,12 @@ class LatexModule(Cog):
 	@hybrid_command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
 	async def tex(self, context, *, latex=''):
-		await self.handle(context.message, latex, math_mode=False)
+		await self.handle(context, latex, math_mode=False)
 
 	@hybrid_command(aliases=['ptex'])
 	@core.settings.command_allowed('c-tex')
 	async def texp(self, context, *, latex=''):
-		await self.handle(context.message, latex, math_mode=True)
+		await self.handle(context, latex, math_mode=True)
 
 	@Cog.listener()
 	async def on_message_discarded(self, message: Message):
@@ -130,18 +130,18 @@ class LatexModule(Cog):
 				if latex != '':
 					await self.handle(MessagePretendingToBeAContext(message), latex, math_mode=True)
 
-	async def handle(self, message, source, math_mode):
+	async def handle(self, context: Context, source, math_mode):
 		if source == '':
-			await message.reply('Type `=help tex` for information on how to use this command.')
+			await context.reply('Type `=help tex` for information on how to use this command.')
 		else:
-			print('latex render', message.author.id, source)
-			colour_back, colour_text = await self.get_colours(message.author)
+			print('latex render', context.author.id, source)
+			colour_back, colour_text = await self.get_colours(context.author)
 			latex = f'\\pagecolor[HTML]{{{colour_back}}}\\definecolor{{text}}{{HTML}}{{{colour_text}}}\\color{{text}}\\ctikzset{{color=text}}{process_latex(source, math_mode)}\n\\end{{document}}\n'
-			await self.render_and_reply(message, latex)
+			await self.render_and_reply(context, latex)
 
-	async def render_and_reply(self, message, latex):
-		with MessageEditGuard(message, message.channel, self.bot) as guard:
-			async with message.channel.typing():
+	async def render_and_reply(self, context: Context, latex):
+		with MessageEditGuard(context.message, context.message.channel, self.bot) as guard:
+			async with context.typing():
 				sent_message = None
 				try:
 					render_result = await self.generate_image(latex)
@@ -153,10 +153,10 @@ class LatexModule(Cog):
 						m = err[0].strip("!\n")
 					else:
 						m = e.log
-					sent_message = await guard.send(f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+					sent_message = await guard.reply(context, f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
 				else:
-					sent_message = await guard.send(file=discord.File(render_result, 'latex.png'))
-					if await self.bot.settings.resolve_message('f-tex-delete', message):
+					sent_message = await guard.reply(context, file=discord.File(render_result, 'latex.png'))
+					if await self.bot.settings.resolve_message('f-tex-delete', context.message):
 						try:
 							await context.message.delete()
 						except discord.errors.NotFound:
