@@ -132,7 +132,7 @@ class LatexModule(Cog):
 
 	async def handle(self, message, source, math_mode):
 		if source == '':
-			await context.reply('Type `=help tex` for information on how to use this command.')
+			await message.reply('Type `=help tex` for information on how to use this command.')
 		else:
 			print('latex render', message.author.id, source)
 			colour_back, colour_text = await self.get_colours(message.author)
@@ -206,7 +206,7 @@ class LatexModule(Cog):
 		if code == LatexCodes.errTex:
 			raise RenderingError(body[:-4].decode())
 		if code != LatexCodes.ok:
-			raise Exception('latex render: {body}')
+			raise Exception(f'latex render: {body}')
 		return io.BytesIO(body[:-4])
 
 def extract_inline_tex(content):

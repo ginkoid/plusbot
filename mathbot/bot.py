@@ -20,7 +20,6 @@ import core.settings
 import utils
 
 from queuedict import QueueDict
-from modules.reporter import report
 
 from patrons import PatronageMixin
 
@@ -212,8 +211,7 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 
 	async def report_error(self, destination, error, human_details):
 		tb = ''.join(traceback.format_exception(type(error), value=error, tb=error.__traceback__))
-		termcolor.cprint(human_details, 'red')
-		termcolor.cprint(tb, 'blue')
+		print(tb)
 		try:
 			if destination is not None:
 				embed = discord.Embed(
@@ -222,8 +220,8 @@ class MathBot(PatronageMixin, discord.ext.commands.AutoShardedBot):
 					description='A report has been automatically sent to the developer.'
 				)
 				await destination.send(embed=embed)
-		finally:
-			await report(self, f'{self.shard_ids} {human_details}\n```\n{tb}\n```')
+		except:
+			pass
 
 
 def run(parameters):
@@ -243,7 +241,6 @@ def _get_extensions(parameters):
 	yield 'modules.help'
 	yield 'modules.latex'
 	yield 'modules.purge'
-	yield 'modules.reporter'
 	yield 'modules.settings'
 	yield 'modules.wolfram'
 	yield 'modules.oeis'

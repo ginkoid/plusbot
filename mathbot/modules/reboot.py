@@ -1,6 +1,4 @@
 from discord.ext.commands import command, Cog, Context
-import subprocess
-import modules.reporter
 
 class Reboot(Cog):
 	def __init__(self, bot):
@@ -8,7 +6,6 @@ class Reboot(Cog):
 
 	@command()
 	async def sync_commands_global(self, ctx: Context):
-		# TODO: Make this userid set in parameters.json
 		if ctx.author.id == self.bot.parameters.get('admin_id'):
 			await ctx.send('Syncing global commands')
 			async with ctx.typing():
