@@ -164,17 +164,6 @@ class LatexModule(Cog):
 						except discord.errors.Forbidden:
 							await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
 
-				if sent_message and await self.bot.settings.resolve_message('f-tex-trashcan', context.message):
-					with suppress(discord.errors.NotFound):
-						await sent_message.add_reaction(DELETE_EMOJI)
-
-	@Cog.listener()
-	async def on_reaction_add(self, reaction, user):
-		if not user.bot and reaction.emoji == DELETE_EMOJI:
-			blame = await self.bot.keystore.get_json('blame', str(reaction.message.id))
-			if blame is not None and blame['id'] == user.id:
-				await reaction.message.delete()
-
 	async def get_colours(self, user):
 		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
 		if colour_setting == 'light':
