@@ -1,24 +1,15 @@
-import PIL
-import PIL.Image
-import PIL.ImageDraw
-import PIL.ImageFont
 import io
 import core.settings
-import aiohttp
 import asyncio
 import re
-import imageutil
 import core.help
 import discord
 import json
 import struct
-import time
 import collections
-from queuedict import QueueDict
 from open_relative import *
-from discord.ext.commands import command, Cog, Context
+from discord.ext.commands import Cog, Context
 from utils import is_private, MessageEditGuard
-from contextlib import suppress
 from enum import IntEnum
 
 from discord import Message
@@ -28,10 +19,12 @@ core.help.load_from_file('./help/latex.md')
 
 DELETE_EMOJI = '🗑'
 
+# https://github.com/ginkoid/plusbot-latex/blob/5b5090a2a15606c98b278e7beb5ca9e92843016d/main.rs#L5-L10
 class LatexCodes(IntEnum):
-	ok = 0
-	errTex = 1
-	errGs = 2
+	Ok = 0
+	ErrLatex = 1
+	ErrMupdf = 2
+	ErrInternal = 3
 
 with open_relative('replacements.json', encoding = 'utf-8') as _f:
 	TEX_REPLACEMENTS = json.load(_f)
@@ -141,28 +134,27 @@ class LatexModule(Cog):
 
 	async def render_and_reply(self, context: Context, latex):
 		with MessageEditGuard(context.message, context.message.channel, self.bot) as guard:
-			async with context.typing():
-				sent_message = None
-				try:
-					render_result = await self.generate_image(latex)
-				except asyncio.TimeoutError:
-					sent_message = await guard.reply(context, LATEX_TIMEOUT_MESSAGE)
-				except RenderingError as e:
-					err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
-					if err:
-						m = err[0].strip("!\n")
-					else:
-						m = e.log
-					sent_message = await guard.reply(context, f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+			self.bot.loop.create_task(context.channel._state.http.send_typing(context.channel.id))
+			try:
+				render_result = await self.generate_image(latex)
+			except asyncio.TimeoutError:
+				await guard.reply(context, LATEX_TIMEOUT_MESSAGE)
+			except RenderingError as e:
+				err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
+				if err:
+					m = err[0].strip("!\n")
 				else:
-					sent_message = await guard.reply(context, file=discord.File(render_result, 'latex.png'))
-					if await self.bot.settings.resolve_message('f-tex-delete', context.message):
-						try:
-							await context.message.delete()
-						except discord.errors.NotFound:
-							pass
-						except discord.errors.Forbidden:
-							await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
+					m = e.log
+				await guard.reply(context, f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+			else:
+				await guard.reply(context, file=discord.File(render_result, 'latex.png'))
+				if await self.bot.settings.resolve_message('f-tex-delete', context.message):
+					try:
+						await context.message.delete()
+					except discord.errors.NotFound:
+						pass
+					except discord.errors.Forbidden:
+						await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
 
 	async def get_colours(self, user):
 		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
@@ -192,9 +184,9 @@ class LatexModule(Cog):
 			if writer is not None:
 				writer.close()
 		code, = struct.unpack('!I', body[-4:])
-		if code == LatexCodes.errTex:
+		if code == LatexCodes.ErrLatex:
 			raise RenderingError(body[:-4].decode())
-		if code != LatexCodes.ok:
+		if code != LatexCodes.Ok:
 			raise Exception(f'latex render: {body}')
 		return io.BytesIO(body[:-4])
 
