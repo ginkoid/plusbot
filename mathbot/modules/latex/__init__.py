@@ -1,16 +1,15 @@
-import io
 import core.settings
-import asyncio
 import re
 import core.help
 import discord
 import json
-import struct
-import collections
+import urllib.parse
+import hmac
+import base64
+import aiohttp
 from open_relative import *
 from discord.ext.commands import Cog, Context
 from utils import is_private, MessageEditGuard
-from enum import IntEnum
 
 from discord import Message
 from discord.ext.commands.hybrid import hybrid_command
@@ -19,31 +18,15 @@ core.help.load_from_file('./help/latex.md')
 
 DELETE_EMOJI = '🗑'
 
-# https://github.com/ginkoid/plusbot-latex/blob/5b5090a2a15606c98b278e7beb5ca9e92843016d/main.rs#L5-L10
-class LatexCodes(IntEnum):
-	Ok = 0
-	ErrLatex = 1
-	ErrMupdf = 2
-	ErrInternal = 3
-
 with open_relative('replacements.json', encoding = 'utf-8') as _f:
 	TEX_REPLACEMENTS = json.load(_f)
 
-
 # Error messages
-
-LATEX_TIMEOUT_MESSAGE = 'The renderer took too long to respond.'
-
-PERMS_FAILURE = '''\
-I don't have permission to upload images here :frowning:
-The owner of this server should be able to fix this issue.
-'''
 
 DELETE_PERMS_FAILURE = '''\
 The bot has been set up to delete `=tex` command inputs.
 It requires the **manage messages** permission in order to do this.
 '''
-
 
 class RenderingError(Exception):
 	def __init__(self, log):
@@ -54,37 +37,6 @@ class RenderingError(Exception):
 
 	def __repr__(self):
 		return f'RenderingError@{id(self)}'
-
-class LatexPool:
-	def __init__(self, bot):
-		self.bot = bot
-		self.pool = collections.deque()
-		for _ in range(self.bot.parameters.get('latex pool')):
-			self.add_conn()
-		self.bot.loop.create_task(self.refresh())
-
-	def add_conn(self):
-		self.pool.append(self.bot.loop.create_task(self.connect()))
-
-	async def refresh(self):
-		while self.pool:
-			await asyncio.sleep(60)
-			_, writer = await self.get_conn()
-			writer.close()
-			await writer.wait_closed()
-
-	async def connect(self):
-		reader, writer = await asyncio.open_connection(
-			self.bot.parameters.get('latex hostname'),
-			self.bot.parameters.get('latex port'),
-		)
-		writer.write(b'\\begin{document}\n')
-		await writer.drain()
-		return reader, writer
-
-	async def get_conn(self):
-		self.add_conn()
-		return await self.pool.popleft()
 
 class MessagePretendingToBeAContext:
 
@@ -103,7 +55,8 @@ class LatexModule(Cog):
 
 	def __init__(self, bot):
 		self.bot = bot
-		self.pool = LatexPool(bot)
+		self.hmac_key = base64.urlsafe_b64decode(self.bot.parameters.get('latex hmac_key').encode() + b'==')
+		self.session = aiohttp.ClientSession()
 
 	@hybrid_command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
@@ -127,27 +80,28 @@ class LatexModule(Cog):
 		if source == '':
 			await context.reply('Type `=help tex` for information on how to use this command.')
 		else:
-			print('latex render', context.author.id, source)
 			colour_back, colour_text = await self.get_colours(context.author)
-			latex = f'\\pagecolor[HTML]{{{colour_back}}}\\definecolor{{text}}{{HTML}}{{{colour_text}}}\\color{{text}}\\ctikzset{{color=text}}{process_latex(source, math_mode)}\n\\end{{document}}\n'
+			latex = f'\\pagecolor[HTML]{{{colour_back}}}\\definecolor{{text}}{{HTML}}{{{colour_text}}}\\color{{text}}\\ctikzset{{color=text}}{process_latex(source, math_mode)}'
 			await self.render_and_reply(context, latex)
 
 	async def render_and_reply(self, context: Context, latex):
 		with MessageEditGuard(context.message, context.message.channel, self.bot) as guard:
-			self.bot.loop.create_task(context.channel._state.http.send_typing(context.channel.id))
+			token = base64.urlsafe_b64encode(hmac.digest(self.hmac_key, latex.encode(), 'sha256')).rstrip(b'=').decode()
+			url = f'https://tex.flag.sh/render/{urllib.parse.quote(latex)}?token={token}'
+			task = self.bot.loop.create_task(guard.reply(context, url))
 			try:
-				render_result = await self.generate_image(latex)
-			except asyncio.TimeoutError:
-				await guard.reply(context, LATEX_TIMEOUT_MESSAGE)
+				async with self.session.get(url, timeout=10) as response:
+					if response.status != 200:
+						raise RenderingError(await response.text())
 			except RenderingError as e:
 				err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
 				if err:
 					m = err[0].strip("!\n")
 				else:
 					m = e.log
-				await guard.reply(context, f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+				message = await task
+				await message.edit(content=f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
 			else:
-				await guard.reply(context, file=discord.File(render_result, 'latex.png'))
 				if await self.bot.settings.resolve_message('f-tex-delete', context.message):
 					try:
 						await context.message.delete()
@@ -164,31 +118,6 @@ class LatexModule(Cog):
 			return '36393F', 'f0f0f0'
 		# Fallback in case of other weird things
 		return 'ffffff', '202020'
-
-	async def generate_image(self, latex, tries=0):
-		if tries > self.bot.parameters.get('latex pool'):
-			raise Exception('too many latex tries')
-		writer = None
-		try:
-			reader, writer = await self.pool.get_conn()
-			writer.write(latex.encode())
-			await writer.drain()
-			body = await asyncio.wait_for(reader.read(), timeout=5)
-			if body == b'':
-				raise Exception('empty body')
-		except asyncio.TimeoutError:
-			raise
-		except:
-			return await self.generate_image(latex, tries + 1)
-		finally:
-			if writer is not None:
-				writer.close()
-		code, = struct.unpack('!I', body[-4:])
-		if code == LatexCodes.ErrLatex:
-			raise RenderingError(body[:-4].decode())
-		if code != LatexCodes.Ok:
-			raise Exception(f'latex render: {body}')
-		return io.BytesIO(body[:-4])
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))
@@ -208,7 +137,6 @@ def extract_inline_tex(content):
 		pass
 	return latex.rstrip()
 
-
 BLOCKFORMAT_REGEX = re.compile('^```(?:tex\n)?((?:.|\n)*)```$')
 
 def process_latex(latex, math_mode):
@@ -222,7 +150,6 @@ def process_latex(latex, math_mode):
 	if not math_mode:
 		latex = f'\\( \\displaystyle {latex} \\)'
 	return latex
-
 
 def setup(bot):
 	return bot.add_cog(LatexModule(bot))
