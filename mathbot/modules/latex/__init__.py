@@ -56,6 +56,8 @@ class LatexModule(Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		self.hmac_key = base64.urlsafe_b64decode(self.bot.parameters.get('latex hmac_key').encode() + b'==')
+		self.send_origin = self.bot.parameters.get('latex send_origin')
+		self.request_origin = self.bot.parameters.get('latex request_origin')
 		self.session = aiohttp.ClientSession()
 
 	@hybrid_command(aliases=['latex', 'rtex', 'texw', 'wtex'])
@@ -87,10 +89,10 @@ class LatexModule(Cog):
 	async def render_and_reply(self, context: Context, latex):
 		with MessageEditGuard(context.message, context.message.channel, self.bot) as guard:
 			token = base64.urlsafe_b64encode(hmac.digest(self.hmac_key, latex.encode(), 'sha256')).rstrip(b'=').decode()
-			url = f'https://tex.flag.sh/render/{urllib.parse.quote(latex)}?token={token}'
-			task = self.bot.loop.create_task(guard.reply(context, url))
+			path = f'/render/{urllib.parse.quote(latex)}?token={token}'
+			task = self.bot.loop.create_task(guard.reply(context, f'{self.send_origin}{path}'))
 			try:
-				async with self.session.get(url, timeout=10) as response:
+				async with self.session.get(f'{self.request_origin}{path}', timeout=10) as response:
 					if response.status != 200:
 						raise RenderingError(await response.text())
 			except RenderingError as e:

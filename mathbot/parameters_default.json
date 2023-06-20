@@ -3,9 +3,9 @@
 	"token": null,
 	"admin_id": 0,
 	"latex": {
-		"hostname": "localhost",
-		"port": 5000,
-		"pool": 1
+		"send_origin": "",
+		"request_origin": "",
+		"hmac_key": ""
 	},
 	"keystore": {
 		"disk": {
