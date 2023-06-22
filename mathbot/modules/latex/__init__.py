@@ -7,6 +7,7 @@ import urllib.parse
 import hmac
 import base64
 import aiohttp
+import io
 from open_relative import *
 from discord.ext.commands import Cog, Context
 from utils import is_private, MessageEditGuard
@@ -60,6 +61,9 @@ class LatexModule(Cog):
 		self.request_origin = self.bot.parameters.get('latex request_origin')
 		self.session = aiohttp.ClientSession()
 
+	async def cog_unload(self):
+		await self.session.close()
+
 	@hybrid_command(aliases=['latex', 'rtex', 'texw', 'wtex'])
 	@core.settings.command_allowed('c-tex')
 	async def tex(self, context, *, latex=''):
@@ -90,27 +94,40 @@ class LatexModule(Cog):
 		with MessageEditGuard(context.message, context.message.channel, self.bot) as guard:
 			token = base64.urlsafe_b64encode(hmac.digest(self.hmac_key, latex.encode(), 'sha256')).rstrip(b'=').decode()
 			path = f'/render/{urllib.parse.quote(latex)}?token={token}'
-			task = self.bot.loop.create_task(guard.reply(context, f'{self.send_origin}{path}'))
-			try:
-				async with self.session.get(f'{self.request_origin}{path}', timeout=10) as response:
-					if response.status != 200:
-						raise RenderingError(await response.text())
-			except RenderingError as e:
-				err = e.log is not None and re.search(r'^\*?!.*?^!', e.log + '\n!', re.MULTILINE + re.DOTALL)
-				if err:
-					m = err[0].strip("!\n")
-				else:
-					m = e.log
-				message = await task
-				await message.edit(content=f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```')
+			send_url = f'{self.send_origin}{path}'
+			request_url = f'{self.request_origin}{path}'
+			if len(send_url) > 2000:
+				await self.render_slow(guard, context, request_url)
 			else:
-				if await self.bot.settings.resolve_message('f-tex-delete', context.message):
-					try:
-						await context.message.delete()
-					except discord.errors.NotFound:
-						pass
-					except discord.errors.Forbidden:
-						await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
+				await self.render_fast(guard, context, send_url, request_url)
+
+	async def render_slow(self, guard: MessageEditGuard, context: Context, request_url):
+		self.bot.loop.create_task(context.channel._state.http.send_typing(context.channel.id))
+		async with self.session.get(request_url, timeout=10) as response:
+			if response.status != 200:
+				await guard.reply(context, get_latex_error_content(await response.text()))
+				return
+			image = await response.read()
+			await guard.reply(context, file=discord.File(io.BytesIO(image), 'latex.png'))
+			await self.handle_delete(guard, context)
+
+	async def render_fast(self, guard: MessageEditGuard, context: Context, send_url, request_url):
+		task = self.bot.loop.create_task(guard.reply(context, send_url))
+		async with self.session.get(request_url, timeout=10) as response:
+			if response.status != 200:
+				content = await response.text()
+				message = await task
+				await message.edit(content=get_latex_error_content(content))
+		await self.handle_delete(guard, context)
+
+	async def handle_delete(self, guard: MessageEditGuard, context: Context):
+		if await self.bot.settings.resolve_message('f-tex-delete', context.message):
+			try:
+				await context.message.delete()
+			except discord.errors.NotFound:
+				pass
+			except discord.errors.Forbidden:
+				await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
 
 	async def get_colours(self, user):
 		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
@@ -155,3 +172,11 @@ def process_latex(latex, math_mode):
 
 def setup(bot):
 	return bot.add_cog(LatexModule(bot))
+
+def get_latex_error_content(log):
+	err = re.search(r'^\*?!.*?^!', log + '\n!', re.MULTILINE + re.DOTALL)
+	if err:
+		m = err[0].strip("!\n")
+	else:
+		m = log
+	return f'Rendering failed. Check your code. You may edit your existing message.\n\n**Error Log:**\n```\n{m[:1800]}\n```'
