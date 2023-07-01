@@ -86,8 +86,7 @@ class LatexModule(Cog):
 		if source == '':
 			await context.reply('Type `=help tex` for information on how to use this command.')
 		else:
-			colour_back, colour_text = await self.get_colours(context.author)
-			latex = f'\\pagecolor[HTML]{{{colour_back}}}\\definecolor{{text}}{{HTML}}{{{colour_text}}}\\color{{text}}\\ctikzset{{color=text}}{process_latex(source, math_mode)}'
+			latex = process_latex(source, math_mode)
 			await self.render_and_reply(context, latex)
 
 	async def render_and_reply(self, context: Context, latex):
@@ -128,15 +127,6 @@ class LatexModule(Cog):
 				pass
 			except discord.errors.Forbidden:
 				await guard.reply(context, 'Failed to delete source message automatically - either grant the bot "Manage Messages" permissions or disable `f-tex-delete`')
-
-	async def get_colours(self, user):
-		colour_setting = await self.bot.keystore.get('p-tex-colour', str(user.id)) or 'light'
-		if colour_setting == 'light':
-			return 'ffffff', '202020'
-		elif colour_setting == 'dark':
-			return '36393F', 'f0f0f0'
-		# Fallback in case of other weird things
-		return 'ffffff', '202020'
 
 def extract_inline_tex(content):
 	parts = iter(content.split('$$'))

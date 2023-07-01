@@ -4,8 +4,6 @@
 
 The `{{prefix}}tex` command is used render *LaTeX* equations.
 
-You can use the `{{prefix}}theme` command to change the colour of the results.
-
 ## Examples
 
 `{{prefix}}tex x = 7`
